@@ -1,0 +1,16 @@
+# Secretos y datos locales: NUNCA se suben
+backend/clave_firma.pem
+*.pem
+.env
+*.db
+backend/uploads/
+
+# Se vuelve a generar o es local
+__pycache__/
+.pytest_cache/
+.venv/
+.claude/launch.json
+propuestas/
+
+# El frontend es otro repositorio: se clona aquí para compilarlo y servirlo
+frontend/

@@ -1,0 +1,58 @@
+{
+  "formato": 1,
+  "origen": "Ejemplo de la documentación",
+  "fuente": "https://universidad.example/convocatorias/ingenieria-2027.pdf",
+  "cambios": [
+    {
+      "accion": "crear",
+      "recurso": "convocatorias",
+      "referencias": { "universidad": "UPE", "facultad": "Facultad de Ingeniería" },
+      "datos": {
+        "titulo": "Convocatoria de ingreso 2027 · Ingeniería",
+        "inscripcion_inicio": "2027-01-10",
+        "inscripcion_fin": "2027-02-10",
+        "fecha_examen": "2027-02-20",
+        "modalidad_ingreso": "ambos",
+        "costo_inscripcion_bs": 150
+      },
+      "evidencia": {
+        "titulo": "CONVOCATORIA DE INGRESO 2027 - FACULTAD DE INGENIERÍA",
+        "inscripcion_inicio": "Las inscripciones se abren el 10 de enero de 2027",
+        "inscripcion_fin": "y cierran el 10 de febrero de 2027",
+        "fecha_examen": "El examen de ingreso será el 20 de febrero de 2027",
+        "modalidad_ingreso": "También se puede ingresar por el curso preuniversitario",
+        "costo_inscripcion_bs": "Costo de inscripción: Bs 150"
+      },
+      "confianza": "alta"
+    },
+    {
+      "accion": "crear",
+      "recurso": "preuniversitarios",
+      "datos": {
+        "nombre": "Instituto Preuniversitario Horizonte",
+        "tipo": "instituto",
+        "ciudad": "Cochabamba",
+        "departamento": "Cochabamba",
+        "duracion_meses": 4,
+        "costo_bs": 500,
+        "modalidad": "mixta",
+        "zona": "Zona Sud",
+        "materias": "Matemáticas,Física,Química",
+        "facultades_tipos": "ciencias_tecnologia,medicina"
+      },
+      "evidencia": {
+        "nombre": "INSTITUTO PREUNIVERSITARIO HORIZONTE",
+        "tipo": "INSTITUTO PREUNIVERSITARIO HORIZONTE",
+        "ciudad": "Zona Sud, Cochabamba",
+        "departamento": "Zona Sud, Cochabamba",
+        "duracion_meses": "Curso de 4 meses",
+        "costo_bs": "Inversión: Bs 500",
+        "modalidad": "Clases presenciales y por internet",
+        "zona": "Zona Sud, Cochabamba",
+        "materias": "Matemáticas · Física · Química",
+        "facultades_tipos": "Para Ingeniería y Medicina"
+      },
+      "confianza": "media"
+    }
+  ]
+}
