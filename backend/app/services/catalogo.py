@@ -39,6 +39,7 @@ def resumen_facultad(session: Session, f: Facultad, hoy: Optional[date] = None) 
         departamento=uni.departamento,
         n_carreras=len(repo.carreras_de(session, f.id)),
         estado_convocatoria=conv.estado_resumen(_convocatorias_de(session, f.id, hoy)),
+        convocatoria_imagen_url=f.convocatoria_imagen_url,
     )
 
 

@@ -12,7 +12,7 @@ from typing import Optional
 from sqlmodel import Session
 
 from ..core.config import LIMITE_IMAGEN, LIMITE_VIDEO, UPLOADS_DIR
-from ..models.entities import Ajuste, Media, Universidad
+from ..models.entities import Ajuste, Facultad, Media, Preuniversitario, Universidad
 from ..repositories import admin as repo
 from ..schemas.admin import MediaOut
 from sqlmodel import select
@@ -74,8 +74,13 @@ def guardar(session: Session, nombre_original: str, contenido: bytes) -> Media:
 
 def en_uso(session: Session, m: Media) -> bool:
     url = url_de(m)
-    if session.exec(select(Universidad).where(Universidad.imagen_url == url)).first():
-        return True
+    for modelo, columna in (
+        (Universidad, Universidad.imagen_url),
+        (Preuniversitario, Preuniversitario.imagen_url),
+        (Facultad, Facultad.convocatoria_imagen_url),
+    ):
+        if session.exec(select(modelo).where(columna == url)).first():
+            return True
     return session.exec(select(Ajuste).where(Ajuste.valor == url)).first() is not None
 
 

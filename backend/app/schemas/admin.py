@@ -25,12 +25,18 @@ class UniversidadIn(BaseModel):
     becas: Optional[str] = Field(default=None, max_length=300)
     fuente_url: Url = None
     verificado_en: Optional[date] = None
+    descripcion: Optional[str] = Field(default=None, max_length=300)
+    contacto: Optional[str] = Field(default=None, max_length=120)
+    facebook: Url = None
+    instagram: Url = None
+    tiktok: Url = None
 
 
 class FacultadIn(BaseModel):
     universidad_id: int
     nombre: Texto
     area: Area
+    convocatoria_imagen_url: UrlMedia = None
 
 
 class CarreraIn(BaseModel):

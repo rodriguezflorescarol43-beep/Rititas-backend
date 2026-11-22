@@ -22,6 +22,11 @@ class UniversidadOut(_Out):
     becas: Optional[str] = None
     fuente_url: Optional[str] = None
     verificado_en: Optional[date] = None
+    descripcion: Optional[str] = None
+    contacto: Optional[str] = None
+    facebook: Optional[str] = None
+    instagram: Optional[str] = None
+    tiktok: Optional[str] = None
 
 
 class CarreraOut(_Out):
@@ -61,6 +66,7 @@ class FacultadResumen(BaseModel):
     departamento: str
     n_carreras: int
     estado_convocatoria: Optional[str] = None
+    convocatoria_imagen_url: Optional[str] = None
 
 
 class FacultadDetalle(FacultadResumen):

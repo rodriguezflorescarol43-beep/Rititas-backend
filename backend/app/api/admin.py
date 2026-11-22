@@ -19,6 +19,7 @@ from ..core.security import (
 from ..repositories import admin as repo
 from ..schemas.admin import LoginIn, MediaOut
 from ..services import admin as servicio
+from ..services import medicion as servicio_medicion
 from ..services import medios
 from ..services import propuestas as servicio_propuestas
 from ..services import revision as servicio_revision
@@ -124,6 +125,18 @@ def aplicar_propuesta(cuerpo: dict = Body(...), session: Session = Depends(get_s
     """Aplica solo los cambios que la persona aprobó."""
     with _errores():
         return servicio_propuestas.aplicar(session, cuerpo.get("propuesta"), cuerpo.get("aprobados"))
+
+
+@router.post("/mediciones")
+def medir_ia(cuerpo: dict = Body(...), session: Session = Depends(get_session)):
+    """Compara la propuesta de una IA con la verdad, la pone al lado de un método sin IA y lo guarda."""
+    with _errores():
+        return servicio_medicion.medir(session, cuerpo)
+
+
+@router.get("/mediciones")
+def mediciones(session: Session = Depends(get_session)):
+    return servicio_medicion.listar(session)
 
 
 @router.put("/ajustes")

@@ -103,3 +103,12 @@ def test_los_planes_son_coherentes(client, session):
         assert planes["B"]["carrera_id"] != planes["A"]["carrera_id"]
     assert planes["C"]["preuniversitario"] is not None
     assert planes["supuestos"] == {"meses": 10, "vivienda_mensual_bs": 600}
+
+
+def test_el_plan_c_lleva_a_los_preuniversitarios_de_la_prioridad_del_test(client, session):
+    """El botón «Ver todos los preuniversitarios» debe abrir una facultad que existe y que tenga relación con el Plan A."""
+    _, js = _ejecutar(client, session)
+    c = js["planes"]["C"]
+    tipos = json.loads(client.get("/api/paquete").json()["datos"])["facultades_tipo"]
+    assert c["facultad_tipo"] in tipos
+    assert c["facultad_tipo_nombre"] == tipos[c["facultad_tipo"]]["nombre"]

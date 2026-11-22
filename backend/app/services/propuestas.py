@@ -21,6 +21,7 @@ from sqlmodel import Session, select
 from ..models.entities import Carrera, Convocatoria, Facultad, Preuniversitario, RegistroCambio, Universidad
 from ..repositories import admin as repo
 from . import admin as servicio_admin
+from . import verificador
 from .errores import Conflicto, Invalido, NoEncontrado
 
 FORMATO = 1
@@ -141,9 +142,54 @@ def _similar_existente(session: Session, recurso: str, datos: dict) -> Optional[
     return None
 
 
+def _documento(propuesta: dict) -> Optional[verificador.Documento]:
+    try:
+        return verificador.preparar(propuesta.get("texto_fuente"))
+    except ValueError as e:
+        raise Invalido(str(e)) from e
+
+
+def _verificar_citas(diff: list[dict], documento: Optional[verificador.Documento]) -> list[str]:
+    """Anota en cada campo si su cita está en el documento y si el valor coincide. Devuelve avisos."""
+    avisos: list[str] = []
+    for d in diff:
+        d["cita"] = None
+        d["valor_coincide"] = None
+        if not d["evidencia"] or d["campo"].endswith("_id"):
+            continue
+        d["valor_coincide"] = verificador.valor_coincide(d["despues"], d["evidencia"])
+        if documento is None:
+            d["cita"] = "sin_texto"
+            continue
+        d["cita"] = documento.buscar(d["evidencia"])
+        if d["cambia"] and d["cita"] == "no_encontrada":
+            avisos.append(f"La cita de «{d['campo']}» no aparece en el documento: posible dato inventado.")
+        elif d["cambia"] and d["cita"] == "parecida":
+            avisos.append(f"La cita de «{d['campo']}» se parece al documento, pero no es igual: revísala.")
+    for d in diff:
+        if d["cambia"] and d["valor_coincide"] is False:
+            avisos.append(f"El valor de «{d['campo']}» ({d['despues']}) no coincide con lo que dice su cita.")
+    return avisos
+
+
+def _semaforo(valido: bool, diff: list[dict], advertencias: list[str], documento) -> tuple[str, str]:
+    """Verde: listo para aprobar. Amarillo: míralo antes. Rojo: cuidado. Con una frase que explica por qué."""
+    cambiados = [d for d in diff if d["cambia"] and not d["campo"].endswith("_id")]
+    if not valido:
+        return "rojo", "Tiene errores: no se puede aprobar así."
+    if any(d.get("cita") == "no_encontrada" or d.get("valor_coincide") is False for d in cambiados):
+        return "rojo", "Hay datos que el documento no respalda: puede ser un invento de la IA."
+    if documento is None:
+        return "amarillo", "Sin el texto del documento no se pudieron revisar las citas."
+    if advertencias:
+        return "amarillo", "Míralo antes de aprobar: " + advertencias[0]
+    return "verde", "Todas las citas están en el documento y los valores coinciden."
+
+
 def _preparar(session: Session, propuesta: Any, hoy: Optional[date] = None) -> list[dict]:
     hoy = hoy or date.today()
     resultado = []
+    documento = _documento(propuesta) if isinstance(propuesta, dict) else None
     for indice, cambio in enumerate(_estructura(propuesta)):
         recurso = cambio["recurso"]
         entrada = servicio_admin.RECURSOS[recurso].entrada
@@ -199,8 +245,12 @@ def _preparar(session: Session, propuesta: Any, hoy: Optional[date] = None) -> l
                     advertencias.append(f"Ya existe uno con el mismo nombre (id {existente.id}). ¿No será una actualización?")
             if recurso == "convocatorias" and validado["inscripcion_fin"] < hoy:
                 advertencias.append("La fecha de cierre ya pasó.")
+            advertencias += _verificar_citas(diff, documento)
 
+        semaforo, motivo = _semaforo(not errores, diff, advertencias, documento)
         resultado.append({
+            "semaforo": semaforo,
+            "motivo": motivo,
             "indice": indice,
             "accion": cambio["accion"],
             "recurso": recurso,
@@ -223,12 +273,20 @@ def analizar(session: Session, propuesta: Any, hoy: Optional[date] = None) -> di
     """Revisa la propuesta SIN escribir nada."""
     preparados = _preparar(session, propuesta, hoy)
     limpios = [{k: v for k, v in p.items() if not k.startswith("_")} for p in preparados]
+    citas = [d["cita"] for p in limpios for d in p["diff"] if d.get("cita")]
     return {
         "fuente": propuesta.get("fuente"),
         "origen": propuesta.get("origen"),
         "total": len(limpios),
         "validos": sum(1 for p in limpios if p["valido"]),
         "con_errores": sum(1 for p in limpios if not p["valido"]),
+        "semaforo": {color: sum(1 for p in limpios if p["semaforo"] == color) for color in ("verde", "amarillo", "rojo")},
+        "citas": {
+            "con_texto": bool(str(propuesta.get("texto_fuente") or "").strip()),
+            "encontradas": citas.count("encontrada"),
+            "parecidas": citas.count("parecida"),
+            "no_encontradas": citas.count("no_encontrada"),
+        },
         "cambios": limpios,
     }
 

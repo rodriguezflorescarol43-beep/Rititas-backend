@@ -1,3 +1,4 @@
+import json
 import time
 
 from backend.app.core import security
@@ -190,3 +191,53 @@ def test_portada_rechaza_claves_o_enlaces_raros(client, admin):
 
 def test_cambiar_la_portada_exige_ser_administrador(client):
     assert client.put("/api/admin/ajustes", json={"portada_titulo": "hackeado"}).status_code == 401
+
+
+# ---------- presentación pública de universidades e imagen de la convocatoria ----------
+
+def test_la_universidad_guarda_descripcion_telefono_y_redes(client, admin):
+    base = client.get("/api/admin/universidades", headers=admin).json()[0]
+    base.pop("id")
+    r = client.post("/api/admin/universidades", headers=admin, json={
+        **base, "nombre": "Universidad con redes", "sigla": "UR",
+        "descripcion": "Universidad de prueba para las redes.", "contacto": "4501512",
+        "facebook": "https://facebook.com/ur", "instagram": "https://instagram.com/ur", "tiktok": "https://tiktok.com/@ur",
+    })
+    assert r.status_code == 201, r.text
+    publica = next(u for u in client.get("/api/universidades").json() if u["sigla"] == "UR")
+    assert publica["contacto"] == "4501512" and publica["tiktok"] == "https://tiktok.com/@ur"
+    paquete = json.loads(client.get("/api/paquete").json()["datos"])
+    assert any(u.get("instagram") == "https://instagram.com/ur" for u in paquete["universidades"])  # llega al celular
+
+
+def test_las_redes_de_la_universidad_deben_ser_enlaces(client, admin):
+    base = client.get("/api/admin/universidades", headers=admin).json()[0]
+    base.pop("id")
+    r = client.post("/api/admin/universidades", headers=admin, json={**base, "nombre": "Mala", "sigla": "M", "tiktok": "javascript:alert(1)"})
+    assert r.status_code == 422
+
+
+def test_la_facultad_lleva_la_imagen_de_su_convocatoria(client, admin):
+    facultad = client.get("/api/admin/facultades", headers=admin).json()[0]
+    facultad.pop("id")
+    r = client.post("/api/admin/facultades", headers=admin, json={**facultad, "nombre": "Con afiche", "convocatoria_imagen_url": "/media/afiche.jpg"})
+    assert r.status_code == 201, r.text
+    nueva = next(f for f in client.get("/api/facultades").json() if f["nombre"] == "Con afiche")
+    assert nueva["convocatoria_imagen_url"] == "/media/afiche.jpg"
+    assert client.get(f"/api/facultades/{nueva['id']}").json()["convocatoria_imagen_url"] == "/media/afiche.jpg"
+    mala = client.post("/api/admin/facultades", headers=admin, json={**facultad, "nombre": "Mala", "convocatoria_imagen_url": "https://otro.sitio/x.jpg"})
+    assert mala.status_code == 422  # solo se aceptan imágenes subidas al panel
+
+
+def test_no_se_borra_una_imagen_usada_por_una_facultad_ni_un_preuniversitario(client, admin):
+    afiche = _subir(client, admin, PNG, "afiche.png").json()
+    facultad = client.get("/api/admin/facultades", headers=admin).json()[0]
+    facultad.pop("id")
+    client.post("/api/admin/facultades", headers=admin, json={**facultad, "nombre": "Con afiche 2", "convocatoria_imagen_url": afiche["url"]})
+    assert client.delete(f"/api/admin/media/{afiche['id']}", headers=admin).status_code == 409
+
+    foto = _subir(client, admin, PNG, "foto.png").json()
+    preu = client.get("/api/admin/preuniversitarios", headers=admin).json()[0]
+    preu.pop("id")
+    client.post("/api/admin/preuniversitarios", headers=admin, json={**preu, "nombre": "Con foto", "imagen_url": foto["url"]})
+    assert client.delete(f"/api/admin/media/{foto['id']}", headers=admin).status_code == 409

@@ -45,6 +45,12 @@ class Universidad(SQLModel, table=True):
     becas: Optional[str] = None
     fuente_url: Optional[str] = None
     verificado_en: Optional[date] = None
+    # Presentación pública (agregado después: la migración automática lo suma a bases existentes).
+    descripcion: Optional[str] = None  # una frase corta sobre la universidad
+    contacto: Optional[str] = None  # teléfono o número de informaciones
+    facebook: Optional[str] = None
+    instagram: Optional[str] = None
+    tiktok: Optional[str] = None
 
 
 class Facultad(SQLModel, table=True):
@@ -52,6 +58,8 @@ class Facultad(SQLModel, table=True):
     universidad_id: int = Field(foreign_key="universidad.id", index=True)
     nombre: str
     area: str
+    # Foto o afiche de la convocatoria de esta facultad (se sube en «Imágenes y videos»).
+    convocatoria_imagen_url: Optional[str] = None
 
 
 class Carrera(SQLModel, table=True):
@@ -134,6 +142,16 @@ class RegistroCambio(SQLModel, table=True):
     antes: Optional[str] = None  # JSON
     despues: Optional[str] = None  # JSON
     evidencia: Optional[str] = None  # JSON: campo -> cita textual de la fuente
+
+
+class MedicionIA(SQLModel, table=True):
+    """Una medición de qué tan bien extrajo una IA los datos de un documento, comparada con la verdad."""
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    creado_en: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    documento: str  # nombre o enlace del documento medido
+    origen: Optional[str] = None  # qué IA o método generó la propuesta
+    resultado: str  # JSON con los números (ver services/medicion.py)
 
 
 class Pregunta(SQLModel, table=True):

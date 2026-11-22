@@ -21,6 +21,7 @@ solo aplica lo que el administrador aprueba. Cualquier IA puede generarla mientr
 | `origen` | No | Quién la generó (se guarda en el historial) |
 | `fuente` | No | **Enlace `https`** de donde salen los datos, o el **nombre del archivo** (por ejemplo `afiche.jpg`) |
 | `cambios` | Sí | De 1 a 50 cambios |
+| `texto_fuente` | No (muy recomendado) | El texto del documento oficial. El panel lo agrega solo cuando el administrador lo pega: con él se **verifica que cada cita exista** en el documento y que el valor coincida con su cita (semáforo verde, amarillo o rojo) |
 
 ## Un cambio
 
@@ -39,7 +40,8 @@ solo aplica lo que el administrador aprueba. Cualquier IA puede generarla mientr
 ## Campos por tipo
 
 - **universidades:** `nombre`, `sigla`, `tipo` (`publica`, `privada`, `tecnico`), `ciudad`, `departamento`,
-  `sitio_web`, `costo_mensual_bs`, `becas`.
+  `sitio_web`, `costo_mensual_bs`, `becas`, `descripcion` (una frase corta), `contacto` (teléfono o número de
+  informaciones), `facebook`, `instagram`, `tiktok` (enlaces `https`).
 - **facultades:** `nombre`, `area` (`salud`, `tecnologia`, `negocios`, `social`, `arte`, `naturaleza`) y la
   universidad (`universidad_id` o `referencias.universidad`).
 - **carreras:** `nombre`, `area`, `duracion_anios` (1 a 10), `descripcion` y la facultad

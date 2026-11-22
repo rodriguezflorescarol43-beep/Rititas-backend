@@ -36,16 +36,24 @@ def _es_enlace_interno(campo: str) -> bool:
     return campo.endswith("_id")  # los resuelve el panel a partir de «referencias»
 
 
-def comparar(propuesta: dict, verdad: dict) -> dict:
-    obtenidos = {_clave(c): c for c in propuesta.get("cambios", [])}
-    esperados_claves = {_clave(c) for c in verdad.get("cambios", [])}
+def comparar(propuesta: dict, verdad: dict, por_orden: bool = False) -> dict:
+    """`por_orden=True` empareja el cambio N de la propuesta con el cambio N de la verdad (así lo arma el
+    panel, que construye la verdad a partir de la propuesta); si no, se emparejan por tipo y nombre."""
+    if por_orden:
+        obtenidos = {("orden", i): c for i, c in enumerate(propuesta.get("cambios", []))}
+        verdad = {**verdad, "cambios": [dict(c, _orden=i) for i, c in enumerate(verdad.get("cambios", []))]}
+        clave = lambda c: ("orden", c["_orden"])  # noqa: E731
+    else:
+        obtenidos = {_clave(c): c for c in propuesta.get("cambios", [])}
+        clave = _clave
+    esperados_claves = {clave(c) for c in verdad.get("cambios", [])}
     por_campo: dict[str, dict] = {}
     errores: list[dict] = []
     total = dict(esperados=0, correctos=0, incorrectos=0, omitidos=0, inventados=0, con_cita=0, extraidos=0)
     encontrados = 0
 
     for esperado in verdad.get("cambios", []):
-        obtenido = obtenidos.get(_clave(esperado))
+        obtenido = obtenidos.get(clave(esperado))
         if obtenido:
             encontrados += 1
         nombre = esperado["datos"].get("nombre") or esperado["datos"].get("titulo") or esperado.get("id")

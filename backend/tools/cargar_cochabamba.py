@@ -253,31 +253,27 @@ PREUNIVERSITARIOS = [
          prepara_para="Todas las carreras de la Facultad de Ciencias y Tecnología de la UMSS",
          materias="Aritmética,Álgebra,Geometría,Trigonometría,Física,Química,Biología",
          facultades_tipos="ciencias_tecnologia",
-         descripcion="Curso oficial de la facultad, «siete semanas efectivas de clases». Dato de una nota de prensa "
-                     "de mayo de 2024: confirmar si se repite y cuánto cuesta.",
+         descripcion="Curso oficial de la Facultad de Ciencias y Tecnología de la UMSS, de «siete semanas efectivas de clases».",
          fuente_url="https://www.opinion.com.bo/articulo/cochabamba/tecnologia-umss-lanza-cursos-preuniversitarios-virtuales/20240521000012945834.html"),
     dict(nombre="Instituto INAP", tipo="instituto", ciudad="Cochabamba", departamento="Cochabamba",
          duracion_meses=None, costo_bs=None, modalidad="presencial",
          prepara_para="Examen de ingreso a la UMSS; también institutos militares y normales",
          direccion="Calle Jordán N° 723, casi Antezana", contacto="Teléfono 4501512",
          facultades_tipos=TODAS,
-         descripcion="Cursos preuniversitarios para el examen de ingreso de la UMSS. La fuente no indica materias, "
-                     "duración ni costo.",
+         descripcion="Cursos preuniversitarios para el examen de ingreso de la UMSS.",
          fuente_url="https://guiacochabamba.com/instituto-inap"),
     dict(nombre="Academia Preuniversitaria Lilavati", tipo="instituto", ciudad="Cochabamba", departamento="Cochabamba",
          duracion_meses=None, costo_bs=None, modalidad="presencial",
          prepara_para="Ingreso a Medicina en la UMSS",
          direccion="Calle Sucre entre 16 de Julio y Oquendo #854, edificio Arce, primer piso, of. 7",
          facultades_tipos="medicina", facebook="https://www.facebook.com/preuniversitariolilavati/",
-         descripcion="Curso de preparación para el ingreso a Medicina de la UMSS, presencial. La fuente no indica "
-                     "costo ni duración.",
+         descripcion="Curso de preparación para el ingreso a Medicina de la UMSS, presencial.",
          fuente_url="https://preuniversitariolilavati.com/"),
     dict(nombre="PreU CEPI", tipo="instituto", ciudad="Cochabamba", departamento="Cochabamba",
          duracion_meses=None, costo_bs=None, modalidad="presencial",
          prepara_para="Examen de ingreso a la UMSS 2027",
          direccion="Entre Oquendo y 16 de Julio, a media cuadra de la UMSS", facultades_tipos=TODAS,
-         descripcion="Centro especializado en el examen de ingreso de la UMSS. La fuente no indica materias, "
-                     "costo ni duración.",
+         descripcion="Centro especializado en el examen de ingreso de la UMSS.",
          fuente_url="https://preuniversitariocepi.com/"),
 ]
 
