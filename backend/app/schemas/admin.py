@@ -37,7 +37,7 @@ class CarreraIn(BaseModel):
     facultad_id: int
     nombre: Texto
     area: Area
-    duracion_anios: int = Field(ge=1, le=10)
+    duracion_anios: Optional[int] = Field(default=None, ge=1, le=10)
     descripcion: str = Field(default="", max_length=500)
 
 
@@ -65,7 +65,7 @@ class PreuniversitarioIn(BaseModel):
     tipo: Literal["instituto", "universidad"]
     ciudad: Texto
     departamento: Texto
-    duracion_meses: int = Field(ge=1, le=24)
+    duracion_meses: Optional[int] = Field(default=None, ge=1, le=24)
     costo_bs: Optional[int] = Field(default=None, ge=0, le=100000)
     modalidad: Literal["presencial", "virtual", "mixta"]
     prepara_para: str = Field(default="", max_length=200)

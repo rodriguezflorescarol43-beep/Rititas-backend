@@ -41,4 +41,39 @@ def migrar(motor: Engine) -> list[str]:
                 nulo = "" if columna.nullable else " NOT NULL"
                 conexion.execute(text(f'ALTER TABLE "{tabla.name}" ADD COLUMN "{columna.name}" {tipo}{nulo}{defecto}'))
                 agregadas.append(f"{tabla.name}.{columna.name}")
+    agregadas += _relajar_obligatorias(motor)
     return agregadas
+
+
+def _relajar_obligatorias(motor: Engine) -> list[str]:
+    """Si una columna pasó de obligatoria a opcional en el modelo, la vuelve opcional en la base.
+
+    SQLite no permite cambiar eso con ALTER, así que se rehace la tabla copiando todos sus datos.
+    Ejemplo: la duración de una carrera, que muchas universidades no publican.
+    """
+    relajadas: list[str] = []
+    with motor.begin() as conexion:
+        inspector = inspect(conexion)
+        for tabla in SQLModel.metadata.sorted_tables:
+            if not inspector.has_table(tabla.name):
+                continue
+            en_base = {c["name"]: c for c in inspector.get_columns(tabla.name)}
+            cambiar = [
+                c.name for c in tabla.columns
+                if c.nullable and not c.primary_key and c.name in en_base and not en_base[c.name]["nullable"]
+            ]
+            if not cambiar:
+                continue
+            viejo = f"_viejo_{tabla.name}"
+            comunes = ", ".join(f'"{c.name}"' for c in tabla.columns if c.name in en_base)
+            for indice in inspector.get_indexes(tabla.name):
+                conexion.execute(text(f'DROP INDEX IF EXISTS "{indice["name"]}"'))
+            # Sin esto, SQLite reescribiría las referencias de otras tablas hacia el nombre viejo.
+            conexion.execute(text("PRAGMA legacy_alter_table = ON"))
+            conexion.execute(text(f'ALTER TABLE "{tabla.name}" RENAME TO "{viejo}"'))
+            conexion.execute(text("PRAGMA legacy_alter_table = OFF"))
+            tabla.create(conexion)
+            conexion.execute(text(f'INSERT INTO "{tabla.name}" ({comunes}) SELECT {comunes} FROM "{viejo}"'))
+            conexion.execute(text(f'DROP TABLE "{viejo}"'))
+            relajadas += [f"{tabla.name}.{c} (ahora opcional)" for c in cambiar]
+    return relajadas

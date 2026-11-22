@@ -28,7 +28,7 @@ class CarreraOut(_Out):
     id: int
     nombre: str
     area: str
-    duracion_anios: int
+    duracion_anios: Optional[int] = None
     descripcion: str = ""
 
 
@@ -75,7 +75,7 @@ class PreuniversitarioOut(_Out):
     tipo: str
     ciudad: str
     departamento: str
-    duracion_meses: int
+    duracion_meses: Optional[int] = None
     costo_bs: Optional[int] = None
     modalidad: str
     prepara_para: str = ""

@@ -59,7 +59,7 @@ class Carrera(SQLModel, table=True):
     facultad_id: int = Field(foreign_key="facultad.id", index=True)
     nombre: str
     area: str
-    duracion_anios: int
+    duracion_anios: Optional[int] = None  # vacío = la universidad no la publica
     descripcion: str = ""
 
 
@@ -83,7 +83,7 @@ class Preuniversitario(SQLModel, table=True):
     tipo: str  # instituto | universidad
     ciudad: str
     departamento: str
-    duracion_meses: int
+    duracion_meses: Optional[int] = None  # vacío = el instituto no la publica
     costo_bs: Optional[int] = None
     modalidad: str  # presencial | virtual | mixta
     prepara_para: str = ""
