@@ -3,6 +3,7 @@
 `/login` es público; el resto exige un token válido. Los archivos subidos se
 entregan después desde /media.
 """
+import logging
 from contextlib import contextmanager
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile
@@ -45,6 +46,7 @@ def _errores():
     except (RecursoDesconocido, NoEncontrado) as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Invalido as e:
+        logging.getLogger("uvicorn.error").warning("Datos rechazados (422): %s", e)  # sin datos personales: solo el motivo
         raise HTTPException(status_code=422, detail=str(e))
     except Conflicto as e:
         raise HTTPException(status_code=409, detail=str(e))

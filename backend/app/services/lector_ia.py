@@ -19,7 +19,7 @@ from typing import Optional
 from sqlmodel import Session
 
 from ..core import config
-from . import propuestas
+from . import propuestas, verificador
 from .errores import ArchivoInvalido, ServicioNoDisponible
 
 MAX_BYTES = 8 * 1024 * 1024
@@ -137,6 +137,54 @@ def _extraer_json(respuesta: dict) -> dict:
     return datos
 
 
+SINGULARES = {"universidad": "universidades", "facultad": "facultades", "carrera": "carreras",
+              "convocatoria": "convocatorias", "preuniversitario": "preuniversitarios"}
+
+
+def _sanear(propuesta: dict) -> tuple[list[dict], list[str]]:
+    """Arregla lo que se pueda de lo que devolvió la IA y descarta (avisando) lo que no sirva.
+
+    Una IA a veces cambia un detalle del formato (singular en vez de plural, un id escrito como texto…). Antes un solo
+    detalle así hacía fallar TODA la propuesta; ahora solo se descarta ese cambio y la persona ve qué pasó.
+    """
+    avisos: list[str] = []
+    crudos = propuesta.get("cambios")
+    if not isinstance(crudos, list):
+        return [], ["La IA no devolvió una lista de cambios."]
+    buenos: list[dict] = []
+    for i, c in enumerate(crudos, start=1):
+        if not isinstance(c, dict):
+            avisos.append(f"Se descartó el cambio {i}: formato no válido.")
+            continue
+        recurso = str(c.get("recurso", "")).strip().lower()
+        recurso = SINGULARES.get(recurso, recurso)
+        if recurso not in propuestas.PERMITIDOS:
+            avisos.append(f"Se descartó el cambio {i}: tipo de dato no permitido («{c.get('recurso')}»).")
+            continue
+        datos = c.get("datos")
+        if not isinstance(datos, dict) or not datos:
+            avisos.append(f"Se descartó el cambio {i}: no traía datos.")
+            continue
+        accion = str(c.get("accion", "crear")).strip().lower()
+        item: dict = {"accion": "crear" if accion != "actualizar" else "actualizar", "recurso": recurso, "datos": datos}
+        if item["accion"] == "actualizar":
+            try:
+                item["id"] = int(c.get("id"))
+            except (TypeError, ValueError):
+                item["accion"] = "crear"
+                avisos.append(f"El cambio {i} decía «actualizar» sin indicar cuál: se propone como nuevo. Revisa que no esté repetido.")
+        for clave in ("evidencia", "referencias"):
+            valor = c.get(clave)
+            item[clave] = valor if isinstance(valor, dict) else {}
+        if c.get("confianza") in ("alta", "media", "baja"):
+            item["confianza"] = c["confianza"]
+        buenos.append(item)
+    if len(buenos) > propuestas.MAX_CAMBIOS:
+        avisos.append(f"La IA propuso {len(buenos)} cambios: solo se muestran los primeros {propuestas.MAX_CAMBIOS}.")
+        buenos = buenos[: propuestas.MAX_CAMBIOS]
+    return buenos, avisos
+
+
 def leer(session: Session, nombre: str, contenido: bytes) -> dict:
     """Devuelve {propuesta, texto_fuente, origen}. No guarda nada."""
     if not disponible():
@@ -166,14 +214,22 @@ def leer(session: Session, nombre: str, contenido: bytes) -> dict:
             ultimo = e
     else:
         raise ServicioNoDisponible("Los modelos gratis de Gemini están saturados ahora mismo. Espera un minuto y vuelve a intentar, o usa el ejemplo.", 503)
-    propuesta = _extraer_json(respuesta)
+    cambios, avisos = _sanear(_extraer_json(respuesta))
+    if not cambios:
+        raise ServicioNoDisponible(
+            "La IA no encontró en el documento datos que se puedan cargar (convocatorias, carreras, etc.). "
+            "Prueba con otro documento o con uno más nítido." + (f" Detalle: {avisos[0]}" if avisos else ""), 422)
     origen = f"Gemini ({modelo})"
-    propuesta["origen"] = origen
-    propuesta["fuente"] = nombre  # siempre el archivo real: no se confía en la «fuente» que escriba la IA
+    texto = _texto_del_pdf(contenido) if mime == "application/pdf" else None
+    if texto and len(texto) > verificador.MAX_TEXTO:
+        texto = None
+        avisos.append("El PDF es muy largo: no se pudo comprobar que las frases existan en el documento. Revisa a mano.")
     return {
-        "propuesta": propuesta,
-        "texto_fuente": _texto_del_pdf(contenido) if mime == "application/pdf" else None,
+        # «fuente» siempre es el archivo real: no se confía en la que escriba la IA.
+        "propuesta": {"formato": 1, "origen": origen, "fuente": nombre, "cambios": cambios},
+        "texto_fuente": texto,
         "origen": origen,
+        "avisos": avisos,
     }
 
 

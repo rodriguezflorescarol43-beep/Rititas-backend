@@ -175,3 +175,39 @@ def test_un_error_de_clave_no_prueba_otros_modelos(client, admin, monkeypatch):
 
     monkeypatch.setattr(lector_ia, "_llamar_gemini", mala_clave)
     assert _subir(client, admin).status_code == 502 and len(intentos) == 1
+
+
+# ---------- limpieza de lo que devuelve la IA (antes un detalle tumbaba toda la propuesta) ----------
+
+def test_la_limpieza_arregla_singulares_ids_de_texto_y_descarta_lo_que_no_sirve():
+    cambios, avisos = lector_ia._sanear({"cambios": [
+        {"accion": "Crear", "recurso": "Convocatoria", "datos": {"titulo": "A"}, "evidencia": "texto suelto"},
+        {"accion": "actualizar", "recurso": "carreras", "id": "7", "datos": {"duracion_anios": 5}},
+        {"accion": "actualizar", "recurso": "carreras", "datos": {"nombre": "Sin id"}},
+        {"accion": "crear", "recurso": "embajadores", "datos": {"nombre": "No permitido"}},
+        {"accion": "crear", "recurso": "carreras", "datos": {}},
+        "no soy un cambio",
+    ]})
+    assert [(c["accion"], c["recurso"]) for c in cambios] == [("crear", "convocatorias"), ("actualizar", "carreras"), ("crear", "carreras")]
+    assert cambios[0]["evidencia"] == {} and cambios[1]["id"] == 7
+    texto = " ".join(avisos)
+    assert "sin indicar cuál" in texto and "embajadores" in texto and "no traía datos" in texto and "formato no válido" in texto
+
+
+def test_una_propuesta_con_un_cambio_malo_igual_se_puede_revisar(client, admin, con_clave):
+    ref = client.get("/api/admin/referencias", headers=admin).json()["facultades"][0]
+    buena = _propuesta(ref)
+    buena["cambios"][0]["recurso"] = "convocatoria"  # singular: antes hacía fallar todo
+    buena["cambios"].append({"accion": "crear", "recurso": "usuarios", "datos": {"x": 1}})
+    con_clave.propuesta = {"formato": "1", **buena}  # incluso el formato como texto
+    datos = _subir(client, admin).json()
+    assert datos["propuesta"]["formato"] == 1 and len(datos["propuesta"]["cambios"]) == 1
+    assert any("usuarios" in a for a in datos["avisos"])
+    r = client.post("/api/admin/propuestas/analizar", headers=admin, json=datos["propuesta"])
+    assert r.status_code == 200 and r.json()["total"] == 1  # ya no da 422
+
+
+def test_si_la_ia_no_encuentra_nada_util_el_mensaje_es_claro(client, admin, con_clave):
+    con_clave.propuesta = {"formato": 1, "cambios": [{"accion": "crear", "recurso": "convocatorias", "datos": {}}]}
+    r = _subir(client, admin)
+    assert r.status_code == 422 and "no encontró" in r.json()["detail"]
