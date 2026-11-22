@@ -1,6 +1,6 @@
-# Guía de ingreso · Backend
+# Despega · Backend
 
-**Abstracthon 2026.** Página web para quienes terminan el colegio en zonas alejadas (provincias) y no saben **qué
+**Abstracthon 2026.** «Despega» (guía de ingreso a la universidad) es una página web para quienes terminan el colegio en zonas alejadas (provincias) y no saben **qué
 estudiar**, **qué preuniversitarios existen** ni **cuándo son las convocatorias**.
 
 Este repositorio es el **backend**: la API, la base de datos y el panel de administración. La página que ve el
