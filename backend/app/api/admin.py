@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile
 from sqlmodel import Session
 
+from ..core import config
 from ..core.config import LIMITE_VIDEO
 from ..core.database import get_session
 from ..core.security import (
@@ -19,6 +20,7 @@ from ..core.security import (
 from ..repositories import admin as repo
 from ..schemas.admin import LoginIn, MediaOut
 from ..services import admin as servicio
+from ..services import lector_ia
 from ..services import medicion as servicio_medicion
 from ..services import medios
 from ..services import propuestas as servicio_propuestas
@@ -29,6 +31,7 @@ from ..services.errores import (
     Invalido,
     NoEncontrado,
     RecursoDesconocido,
+    ServicioNoDisponible,
 )
 
 router_login = APIRouter()
@@ -45,7 +48,7 @@ def _errores():
         raise HTTPException(status_code=422, detail=str(e))
     except Conflicto as e:
         raise HTTPException(status_code=409, detail=str(e))
-    except ArchivoInvalido as e:
+    except (ArchivoInvalido, ServicioNoDisponible) as e:
         raise HTTPException(status_code=e.estado, detail=str(e))
 
 
@@ -125,6 +128,27 @@ def aplicar_propuesta(cuerpo: dict = Body(...), session: Session = Depends(get_s
     """Aplica solo los cambios que la persona aprobó."""
     with _errores():
         return servicio_propuestas.aplicar(session, cuerpo.get("propuesta"), cuerpo.get("aprobados"))
+
+
+@router.get("/ia/estado")
+def estado_ia():
+    """¿Está activado «Leer con IA»? Nunca devuelve la clave."""
+    return {"disponible": lector_ia.disponible(), "modelo": config.GEMINI_MODELO if lector_ia.disponible() else None}
+
+
+@router.post("/ia/leer")
+def leer_con_ia(archivo: UploadFile = File(...), session: Session = Depends(get_session)):
+    """La IA lee un PDF o foto y PROPONE datos. No guarda nada: la propuesta se revisa y aprueba aparte."""
+    contenido = archivo.file.read(lector_ia.MAX_BYTES + 1)
+    with _errores():
+        return lector_ia.leer(session, archivo.filename or "documento", contenido)
+
+
+@router.get("/ia/ejemplo")
+def ejemplo_ia(session: Session = Depends(get_session)):
+    """Respuesta de IA guardada sobre un documento ficticio, para demostrar sin internet (no se puede publicar)."""
+    with _errores():
+        return lector_ia.ejemplo(session)
 
 
 @router.post("/mediciones")
