@@ -116,7 +116,7 @@ comprueba el sello: rechaza cualquier archivo alterado o más viejo que lo que y
 ## Panel de administración
 
 Una sola contraseña, sin cuentas. Permite administrar universidades, facultades, carreras, convocatorias,
-preuniversitarios, **embajadores**, **imágenes y videos**, la **portada** y los mensajes de contacto.
+preuniversitarios, **imágenes y videos**, la **portada** y los mensajes de contacto.
 
 - **Seguridad:** token firmado que vence a las 8 horas, máximo 5 intentos fallidos por minuto, validación de todos los
   datos, nombres de archivo aleatorios.
